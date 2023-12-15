@@ -117,7 +117,7 @@ public abstract class Level_GUI extends GameScreen implements Runnable{
         });
     }
     protected void start(){
-        gameThread = new Thread(this){};
+        gameThread = new Thread(this);
         gameThread.start();
     }
     public void GoRunning(){
