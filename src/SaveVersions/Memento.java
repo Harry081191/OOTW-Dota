@@ -1,14 +1,13 @@
 package SaveVersions;
 
 import Bridge.GameScreen;
-import Bridge.Level_GUI;
 
 public class Memento {
-    private Level_GUI level;
-    public Memento(Level_GUI level){
-        this.level = level;
+    private GameScreen gameScreen;
+    public Memento(GameScreen gameScreen){
+        this.gameScreen = gameScreen;
     }
-    public Level_GUI getLevel(){
-        return level;
+    public GameScreen getGameScreen(){
+        return gameScreen;
     }
 }

@@ -1,6 +1,8 @@
 package Bridge;
 
 import Backpaint.BackgroundPanel;
+import Command.Command;
+import Command.TowerCommand;
 import Enemy.Enemy;
 import Message.Failed;
 import Message.Success;
@@ -9,14 +11,13 @@ import SaveVersions.Originator;
 import Strategy.*;
 import Tower.*;
 import Attackenemy.*;
+import Command.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
-public abstract class Level_GUI extends JFrame implements Runnable, GameInfo{
-    protected JFrame frame;
-    protected BackgroundPanel backgroundPanel;
+public abstract class Level_GUI extends GameScreen implements Runnable{
     protected ButtonSelector buttonSelector;
     TowerFactory archerTowerFactory = new ArcherTowerFactory();
     Tower archerTower = archerTowerFactory.createTower();
@@ -41,11 +42,11 @@ public abstract class Level_GUI extends JFrame implements Runnable, GameInfo{
     protected double money = 100.0;
     protected JLabel moneyLabel, enemynumberLabel, castlehpLabel, GoldLab, EnemyNumberLab, CastleHPLab;
     protected int limit = 0, enemynumber = 20, castlehp = 10;
-    public final void MainExecute(){
-        settings();
-        create();
-        start();
-    }
+    TowerCommand tower = new TowerCommand();
+    UpgradeTowerCommand upgradeCommand = new UpgradeTowerCommand(tower);
+    SellTowerCommand sellCommand = new SellTowerCommand(tower);
+    CancelTowerCommand cancelCommand = new CancelTowerCommand();
+    TowerController controller = new TowerController();
     public void setButtonSelector(ButtonSelector buttonSelector){
         this.buttonSelector = buttonSelector;
     }
@@ -54,28 +55,48 @@ public abstract class Level_GUI extends JFrame implements Runnable, GameInfo{
         frame = new JFrame("關卡一");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1600, 900);
-        frame.setLocationRelativeTo(null);
-
         backgroundPanel = new BackgroundPanel("./res/TowerDefenceGame_Map.jpg");
         backgroundPanel.setLayout(null);
         frame.setContentPane(backgroundPanel);
+        frame.setLocationRelativeTo(null);
 
-        //創建JLabel
-        moneyLabel = createLabel(String.valueOf(money), frame.getWidth() / 2 + 50, 0);
-        enemynumberLabel = createLabel(String.valueOf(enemynumber), frame.getWidth() / 2 - 350, 0);
-        castlehpLabel = createLabel(String.valueOf(castlehp), frame.getWidth() / 2 - 750, 0);
-
-        //創建JLabel with icon
-        GoldLab = createImageLabel("./res/button/Gold.png", frame.getWidth() / 2, 0);
-        EnemyNumberLab = createImageLabel("./res/button/GG.png", frame.getWidth() / 2 - 400, 0);
-        CastleHPLab = createImageLabel("./res/button/Heart.png", frame.getWidth() / 2 - 800, 0);
-
-        //將JLabel添加到JFrame
+        moneyLabel = new JLabel(String.valueOf(money));
+        moneyLabel.setBounds(frame.getWidth() / 2 + 50, 0, 100, 50);
         frame.getContentPane().add(moneyLabel);
+        moneyLabel.setFont(new Font("Arial", Font.PLAIN, 20));
+
+        enemynumberLabel = new JLabel(String.valueOf(enemynumber));
+        enemynumberLabel.setBounds(frame.getWidth() / 2 - 350, 0, 120, 50);
         frame.getContentPane().add(enemynumberLabel);
+        enemynumberLabel.setFont(new Font("Arial", Font.PLAIN, 20));
+
+        castlehpLabel = new JLabel(String.valueOf(castlehp));
+        castlehpLabel.setBounds(frame.getWidth() / 2 - 750, 0, 100, 50);
         frame.getContentPane().add(castlehpLabel);
+        castlehpLabel.setFont(new Font("Arial", Font.PLAIN, 20));
+
+        GoldLab = new JLabel();
+        ImageIcon Gold = new ImageIcon("./res/button/Gold.png");
+        Image scaledGoldImage = Gold.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+        ImageIcon scaledGoldIcon = new ImageIcon(scaledGoldImage);
+        GoldLab.setIcon(scaledGoldIcon);
+        GoldLab.setBounds(frame.getWidth() / 2, 0, 100, 50);
         frame.getContentPane().add(GoldLab);
+
+        EnemyNumberLab = new JLabel();
+        ImageIcon EnemyNumber = new ImageIcon("./res/button/GG.png");
+        Image scaledEnemyNumberImage = EnemyNumber.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+        ImageIcon scaledEnemyNumberIcon = new ImageIcon(scaledEnemyNumberImage);
+        EnemyNumberLab.setIcon(scaledEnemyNumberIcon);
+        EnemyNumberLab.setBounds(frame.getWidth() / 2 - 400, 0, 100, 50);
         frame.getContentPane().add(EnemyNumberLab);
+
+        CastleHPLab = new JLabel();
+        ImageIcon CastleHP = new ImageIcon("./res/button/Heart.png");
+        Image scaledCastleHPImage = CastleHP.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+        ImageIcon scaledCastleHPIcon = new ImageIcon(scaledCastleHPImage);
+        CastleHPLab.setIcon(scaledCastleHPIcon);
+        CastleHPLab.setBounds(frame.getWidth() / 2 - 800, 0, 100, 50);
         frame.getContentPane().add(CastleHPLab);
 
         for(int i = 0 ; i < buttons.length ; i++){
@@ -93,11 +114,11 @@ public abstract class Level_GUI extends JFrame implements Runnable, GameInfo{
         }
 
         buttons[1].addActionListener(e -> {
-            isRunning = false;
+            stopRunning();
         });
 
         buttons[2].addActionListener(e -> {
-            isRunning = true;
+            GoRunning();
         });
         buttons[3].addActionListener(e -> {
             VersionScreen versionScreen = new VersionScreen();
@@ -109,26 +130,11 @@ public abstract class Level_GUI extends JFrame implements Runnable, GameInfo{
         gameThread = new Thread(this);
         gameThread.start();
     }
-//    public void GoRunning(){
-//        isRunning = true;
-//    }
-//    public void stopRunning() {
-//        isRunning = false;
-//    }
-    private JLabel createLabel(String text, int x, int y) {
-        JLabel label = new JLabel(text);
-        label.setBounds(x, y, 100, 50);
-        label.setFont(new Font("Arial", Font.PLAIN, 20));
-        return label;
+    public void GoRunning(){
+        isRunning = true;
     }
-    private JLabel createImageLabel(String imagePath, int x, int y) {
-        JLabel label = new JLabel();
-        ImageIcon icon = new ImageIcon(imagePath);
-        Image scaledImage = icon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-        ImageIcon scaledIcon = new ImageIcon(scaledImage);
-        label.setIcon(scaledIcon);
-        label.setBounds(x, y, 100, 50);
-        return label;
+    public void stopRunning() {
+        isRunning = false;
     }
     @Override
     public void run() {
@@ -197,14 +203,14 @@ public abstract class Level_GUI extends JFrame implements Runnable, GameInfo{
         if(updateEnemyNumber() == 0){
             Success success = new Success();
             success.win(new Level1_GUI());
-            Towerlist.clear();
-            isRunning = false;
+            buttonSelector = null;
+            stopRunning();
         }
         if (updateCastleHP() == 0){
             Failed failed = new Failed();
             failed.lose(new Level1_GUI());
-            Towerlist.clear();
-            isRunning = false;
+            buttonSelector = null;
+            stopRunning();
         }
     }
     protected void updatesAttack() {
@@ -239,6 +245,16 @@ public abstract class Level_GUI extends JFrame implements Runnable, GameInfo{
     }
     protected void updateMoneyLabel(){
         moneyLabel.setText(String.valueOf(money));
+    }
+    protected void sellcommandbutton(int x, int y){
+        controller.setCommand(sellCommand, money, towerArray.getTower(x, y));
+        controller.performAction();
+        money = sellCommand.getMoney();
+        updateMoneyLabel();
+    }
+    protected void cancelcommandbutton(int x, int y){
+        controller.setCommand(sellCommand, money, towerArray.getTower(x, y));
+        controller.performAction();
     }
     protected int updateEnemyNumber(){
         enemynumberLabel.setText(String.valueOf(backgroundPanel.enemyTileManager.getObserverEnemy().getEnemyNumber()));

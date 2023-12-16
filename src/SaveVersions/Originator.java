@@ -1,22 +1,21 @@
 package SaveVersions;
 
 import Bridge.GameScreen;
-import Bridge.Level_GUI;
 
 public class Originator {
-    private Level_GUI level;
+    private GameScreen gameScreen;
     public Memento save(){
         System.out.println("Success!");
-        return new Memento(level);
+        return new Memento(gameScreen);
     }
     public void restore(Memento m){
-        this.level = m.getLevel();
+        this.gameScreen = m.getGameScreen();
     }
-    public void setVersion(Level_GUI level){
+    public void setVersion(GameScreen gameScreen){
         System.out.println("Save！");
-        this.level = level;
+        this.gameScreen = gameScreen;
     }
-    public Level_GUI getLevel(){
-        return level;
+    public GameScreen getGameScreen(){
+        return gameScreen;
     }
 }
